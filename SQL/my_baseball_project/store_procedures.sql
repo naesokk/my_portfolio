@@ -87,36 +87,36 @@ DELIMITER ;
 
 USE my_baseball_project;
 
--- Nếu đã có trigger cũ, xóa cho chắc
+-- Delete Trigger if already had
 DROP TRIGGER IF EXISTS trg_update_final_game;
 DROP TRIGGER IF EXISTS trg_update_team_salary_summary;
 
 DELIMITER $$
 
--- 1) Trigger tự động cập nhật finalGame trong players
+-- 1) Update "Final Game" for Players
 CREATE TRIGGER trg_update_final_game
 AFTER INSERT ON salaries
 FOR EACH ROW
 BEGIN
     DECLARE maxYear INT;
-    -- Lấy năm lớn nhất mà player vừa chèn salary
+    -- Take the biggest (most recent year) to insert salary
     SELECT MAX(yearID)
       INTO maxYear
       FROM salaries
      WHERE playerID = NEW.playerID;
 
-    -- Cập nhật finalGame về 31/12 của năm đó
+    -- Update the Final Game to 31/12 of that year
     UPDATE players
        SET finalGame = STR_TO_DATE(CONCAT(maxYear, '-12-31'), '%Y-%m-%d')
      WHERE playerID = NEW.playerID;
 END$$
 
--- 2) Trigger cập nhật tổng lương theo team & năm
+-- 2) Trigger Update by Team Salary
 CREATE TRIGGER trg_update_team_salary_summary
 AFTER INSERT ON salaries
 FOR EACH ROW
 BEGIN
-    -- Chèn hoặc cập nhật tổng lương
+    -- Insert or Update Salaries 
     INSERT INTO team_salary_summary(teamID, yearID, total_salary)
     VALUES (NEW.teamID, NEW.yearID, NEW.salary)
     ON DUPLICATE KEY UPDATE
